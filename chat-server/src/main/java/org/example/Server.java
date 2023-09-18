@@ -7,7 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class Server {
-	private final int port;
+	private int port;
 	private List<ClientHandler> clients;
 
 	public Server(int port) {
@@ -39,15 +39,7 @@ public class Server {
 		}
 	}
 
-	public synchronized void sendMessageToUser(String username, String message) {
-		for (ClientHandler client : clients) {
-			if (client.getUsername().equals(username)) {
-				client.sendMessage(message);
-			}
-		}
-	}
-
-	public synchronized void unsubscribe(ClientHandler clientHandler) {
+	public void unsubscribe(ClientHandler clientHandler) {
 		clients.remove(clientHandler);
 		broadcastMessage("Клиент: " + clientHandler.getUsername() + " вышел из чата");
 	}

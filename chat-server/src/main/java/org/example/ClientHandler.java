@@ -35,19 +35,11 @@ public class ClientHandler {
 
 					String message = in.readUTF();
 					if (message.startsWith("/")) {
-						String[] args = message.split(" ");
-						String command = args[0];
-						if (command.equals("/exit")) {
-							disconnect();
+						if (message.equals("/exit")) {
 							break;
 						}
-						if (command.equals("/w")) {
-							String username = args[1];
-							server.sendMessageToUser(username, message.substring(4 + username.length()));
-						}
-					} else {
-						server.broadcastMessage("Server: " + message);
 					}
+					server.broadcastMessage("Server: " + message);
 				}
 			} catch (IOException e) {
 				throw new RuntimeException(e);

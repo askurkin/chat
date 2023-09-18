@@ -63,6 +63,6 @@ public class Network implements AutoCloseable {
 	}
 
 	public void sendMeassage(String msg) throws IOException {
-		out.writeUTF(msg + "\n");
+		out.writeUTF(msg);
 	}
 }
