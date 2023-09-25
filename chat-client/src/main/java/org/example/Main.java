@@ -2,8 +2,11 @@ package org.example;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.IOException;
 import java.util.Scanner;
+import java.util.concurrent.Callable;
 
 
 public class Main extends JFrame implements Runnable {
@@ -30,16 +33,20 @@ public class Main extends JFrame implements Runnable {
 
 		this.network = network;
 
-		inTextSendButton.addActionListener(event -> {
-					String text = inTextField.getText();
-					try {
-						network.sendMeassage(text);
-					} catch (IOException e) {
-						throw new RuntimeException(e);
-					}
+		ActionListener action = new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				String text = inTextField.getText();
+				try {
+					network.sendMeassage(text);
+				} catch (IOException ex) {
+					throw new RuntimeException(ex);
 				}
+			}
+		};
 
-		);
+		inTextSendButton.addActionListener(action);
+		inTextField.addActionListener(action);
 
 		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		setSize(400, 500);
@@ -49,13 +56,13 @@ public class Main extends JFrame implements Runnable {
 		this.network.setCallback(new Callback() {
 			@Override
 			public void call(Object... args) {
-				outTextArea.append((String) args[0]);
+				outTextArea.append((String) args[0] + "\n");
+				inTextField.setText(null);
 			}
 		});
 	}
 
 	public static void main(String[] args) throws Exception {
-
 
 		try (Network network = new Network()) {
 			network.connect(8080);
