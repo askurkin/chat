@@ -4,6 +4,7 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.Socket;
+import java.util.List;
 
 public class ClientHandler {
 	private Socket socket;
@@ -13,6 +14,7 @@ public class ClientHandler {
 	private DataOutputStream out;
 
 	private String username;
+	private UserRoles userRoles;
 
 	private static int userCount = 0;
 
@@ -25,28 +27,89 @@ public class ClientHandler {
 		this.server = server;
 		in = new DataInputStream(socket.getInputStream());
 		out = new DataOutputStream(socket.getOutputStream());
-		username = "User" + userCount++;
-		server.subscribe(this);
+
 		new Thread(() -> {
 			try {
-				while (true) {
-					// /exit -> disconnect()
-					// /w user message -> user
-
-					String message = in.readUTF();
-					if (message.startsWith("/")) {
-						if (message.equals("/exit")) {
-							break;
-						}
-					}
-					server.broadcastMessage("Server: " + message);
-				}
+				authenticateUser(server);
+				communicateWithUser(server);
 			} catch (IOException e) {
 				throw new RuntimeException(e);
 			} finally {
 				disconnect();
 			}
 		}).start();
+	}
+
+	private void authenticateUser(Server server) throws IOException {
+		boolean isAuthenticated = false;
+		while (!isAuthenticated) {
+			String message = in.readUTF();
+//            /auth login password
+//            /register login nick password
+			String[] args = message.split(" ");
+			String command = args[0];
+			switch (command) {
+				case "/auth": {
+					String login = args[1];
+					String password = args[2];
+					String username = server.getAuthenticationProvider().getUsernameByLoginAndPassword(login, password);
+					if (username == null || username.isBlank()) {
+						sendMessage("Указан неверный логин/пароль");
+					} else {
+						this.username = username;
+						sendMessage(username + ", добро пожаловать в чат!");
+						server.subscribe(this);
+						isAuthenticated = true;
+					}
+					break;
+				}
+				case "/register": {
+					String login = args[1];
+					String nick = args[2];
+					String password = args[3];
+					boolean isRegistred = server.getAuthenticationProvider().register(login, password, nick);
+					if (!isRegistred) {
+						sendMessage("Указанный логин/никнейм уже заняты");
+					} else {
+						this.username = nick;
+						sendMessage(nick + ", добро пожаловать в чат!");
+						server.subscribe(this);
+						isAuthenticated = true;
+					}
+					break;
+				}
+				default: {
+					sendMessage("Авторизуйтесь сперва\n\t/auth login password\n\t/register login nick password");
+				}
+			}
+		}
+	}
+
+	private void communicateWithUser(Server server) throws IOException {
+		while (true) {
+			// /exit -> disconnect()
+			// /w user message -> user
+
+			String message = in.readUTF();
+			if (message.startsWith("/")) {
+				String[] args = message.split(" ");
+				String command = args[0];
+				if (command.equals("/exit")) {
+					break;
+				} else if (command.equals("/w")) {
+					String username = args[1];
+					server.sendMessageToUser(username, message.substring(4 + username.length()));
+				} else if (command.equals("/list")) {
+					List<String> userList = server.getUserList();
+					String joinedUsers = String.join(", ", userList);
+					sendMessage(joinedUsers);
+				} else {
+					server.broadcastMessage("Server: " + command + " не поддерживается");
+				}
+			} else {
+				server.broadcastMessage("Server: " + message);
+			}
+		}
 	}
 
 	public void disconnect() {
@@ -76,7 +139,7 @@ public class ClientHandler {
 
 	public void sendMessage(String message) {
 		try {
-			out.writeUTF(message + "\n");
+			out.writeUTF(message);
 		} catch (IOException e) {
 			e.printStackTrace();
 			disconnect();
