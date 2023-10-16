@@ -54,6 +54,16 @@ public class InMemoryAuthenticationProvider implements AuthenticationProvider, A
 	}
 
 	@Override
+	public UserRoles getUserRole(String username) {
+		for (User user : users) {
+			if (user.getUsername().equals(username)) {
+				return user.getRole();
+			}
+		}
+		return null;
+	}
+
+	@Override
 	public synchronized boolean register(String login, String password, String username) {
 		for (User user : users) {
 			if (Objects.equals(user.getUsername(), username) && Objects.equals(user.getLogin(), login)) {
