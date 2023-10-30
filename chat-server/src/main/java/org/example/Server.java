@@ -56,6 +56,21 @@ public class Server {
 		}
 	}
 
+	public synchronized void kickUser(String username) {
+		boolean kicked = false;
+		for (ClientHandler client : clients) {
+			if (client.getUsername().equals(username)) {
+				client.sendMessage("вас отключил админ");
+				this.broadcastMessage(username + " отключён администратор");
+				client.disconnect();
+				kicked = true;
+			}
+		}
+		if (!kicked) {
+			this.broadcastMessage(username + " - не найден");
+		}
+	}
+
 	public synchronized void unsubscribe(ClientHandler clientHandler) {
 		clients.remove(clientHandler);
 		broadcastMessage("Клиент: " + clientHandler.getUsername() + " вышел из чата");
